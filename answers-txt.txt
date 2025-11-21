@@ -1,0 +1,209 @@
+================================================================================
+                    ASSIGNMENT 2: BASIC FORKS AND C STYLE DEVELOPMENT
+                                    ANSWERS FILE
+================================================================================
+
+================================================================================
+PART 1: CODE EXAMPLES FROM LAB-5 WITH EXPLANATIONS
+================================================================================
+
+EXERCISE 1: process_creation.c - Using fork() in C
+--------------------------------------------------
+Code:
+    #include <stdio.h>
+    #include <unistd.h>
+    int main() {
+        pid_t pid = fork();
+        if (pid == 0) {
+            printf("This is the child process. PID: %d\n", getpid());
+        } else if (pid > 0) {
+            printf("This is the parent process. PID: %d\n", getpid());
+        } else {
+            printf("Fork failed!\n");
+        }
+        return 0;
+    }
+
+Explanation:
+- This program demonstrates process creation using the fork() system call.
+- fork() creates a new process (child) by duplicating the calling process (parent).
+- After fork(), both processes execute the same code from that point onward.
+- fork() returns different values:
+  * Returns 0 to the child process
+  * Returns the child's PID (positive number) to the parent process
+  * Returns -1 if the fork failed (error)
+- getpid() returns the Process ID of the calling process.
+- The if-else structure allows parent and child to execute different code paths.
+- Both processes run concurrently after the fork.
+
+--------------------------------------------------------------------------------
+
+EXERCISE 5: file1.c and file2.c - Role of the Linker
+----------------------------------------------------
+File 1 (file1.c):
+    #include <stdio.h>
+    void hello() {
+        printf("Hello from file1!\n");
+    }
+
+File 2 (file2.c):
+    void hello();
+    int main() {
+        hello();
+        return 0;
+    }
+
+Explanation:
+- These two files demonstrate how the LINKER works.
+- file1.c defines a function called hello() that prints a message.
+- file2.c declares the hello() function prototype and calls it from main().
+- Neither file can work alone:
+  * file1.c has no main() function - cannot be executed
+  * file2.c calls hello() but doesn't define it - undefined reference
+- When we compile with: gcc file1.c file2.c -o output_program
+  * The compiler creates object files (file1.o, file2.o)
+  * The LINKER combines them and resolves the hello() reference
+  * file2.o's call to hello() is connected to file1.o's definition
+- This demonstrates symbol resolution - a key job of the linker.
+
+--------------------------------------------------------------------------------
+
+EXERCISE 6: simple_program.c - Role of the Loader
+-------------------------------------------------
+Code:
+    #include <stdio.h>
+    int main() {
+        printf("This is a simple program.\n");
+        return 0;
+    }
+
+Explanation:
+- This simple program demonstrates the role of the LOADER.
+- The program uses printf() which is NOT defined in our code.
+- printf() comes from the C standard library (libc).
+- When compiled, gcc links against shared libraries dynamically.
+- The LOADER is responsible for:
+  * Loading the executable into memory when you run it
+  * Finding and loading required shared libraries (.so files)
+  * Resolving dynamic symbols (like printf) at runtime
+- Use "ldd simple_program" to see which libraries are needed:
+  * linux-vdso.so.1 - Virtual Dynamic Shared Object (kernel)
+  * libc.so.6 - GNU C Library (contains printf)
+  * /lib64/ld-linux-x86-64.so.2 - The dynamic linker/loader itself
+
+================================================================================
+PART 2: WHAT IS THE JOB OF THE LINKER?
+================================================================================
+
+The LINKER is a program that combines multiple object files and libraries 
+into a single executable file.
+
+Main Jobs of the Linker:
+
+1. SYMBOL RESOLUTION
+   - Matches function calls to their actual definitions
+   - Example: In Exercise 5, the linker connects file2.c's call to hello() 
+     with file1.c's definition of hello()
+   - Reports "undefined reference" errors if symbols are not found
+
+2. RELOCATION
+   - Assigns final memory addresses to all code and data
+   - Updates all references to use the correct addresses
+   - Combines similar sections (.text, .data, .bss) from different files
+
+3. LIBRARY LINKING
+   - Static linking: Copies library code directly into the executable
+   - Dynamic linking: Records which shared libraries are needed
+   - Links standard libraries like libc
+
+4. CREATING THE EXECUTABLE
+   - Produces the final executable in ELF format (on Linux)
+   - Adds headers and metadata needed by the loader
+   - Sets up the program entry point
+
+Example from Lab 5:
+    gcc file1.c file2.c -o output_program
+    
+    Step 1: Compile file1.c -> file1.o (object file)
+    Step 2: Compile file2.c -> file2.o (object file)  
+    Step 3: LINKER combines file1.o + file2.o -> output_program
+    Step 4: Linker resolves: file2.o calls hello() -> found in file1.o
+
+================================================================================
+PART 3: WHAT IS THE JOB OF THE LOADER?
+================================================================================
+
+The LOADER is part of the operating system that loads executable files 
+into memory and prepares them for execution.
+
+Main Jobs of the Loader:
+
+1. READING THE EXECUTABLE
+   - Reads the executable file from disk
+   - Parses the ELF header to understand file structure
+   - Determines how much memory is needed
+
+2. MEMORY ALLOCATION
+   - Allocates memory for different segments:
+     * Text segment (code)
+     * Data segment (initialized variables)
+     * BSS segment (uninitialized variables)
+     * Stack and Heap
+
+3. LOADING INTO MEMORY
+   - Copies program code and data into allocated memory
+   - Maps file contents to virtual memory addresses
+
+4. DYNAMIC LINKING (at runtime)
+   - Locates required shared libraries (.so files)
+   - Loads shared libraries into memory
+   - Resolves dynamic symbols (like printf from libc)
+
+5. SETTING UP EXECUTION ENVIRONMENT
+   - Initializes CPU registers
+   - Sets up the stack pointer
+   - Prepares command-line arguments (argc, argv)
+   - Sets up environment variables
+
+6. TRANSFERRING CONTROL
+   - Jumps to the program's entry point
+   - Program begins execution
+
+Example from Lab 5:
+    gcc simple_program.c -o simple_program
+    ldd simple_program
+    
+    Output shows what the LOADER must load:
+    - libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6
+    - /lib64/ld-linux-x86-64.so.2 (the loader itself)
+
+================================================================================
+COMPILATION PROCESS SUMMARY
+================================================================================
+
+    Source Code (.c)
+          |
+          v
+    [PREPROCESSOR] - Handles #include, #define, macros
+          |
+          v
+    [COMPILER] - Converts C code to assembly language
+          |
+          v
+    [ASSEMBLER] - Converts assembly to machine code (object files .o)
+          |
+          v
+    [LINKER] - Combines object files, resolves symbols, creates executable
+          |
+          v
+    Executable File (stored on disk)
+          |
+          v
+    [LOADER] - Loads into memory at runtime, loads libraries
+          |
+          v
+    Program Execution (in RAM)
+
+================================================================================
+END OF ANSWERS
+================================================================================
