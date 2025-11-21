@@ -102,8 +102,6 @@ The loader loads the executable into memory at runtime and loads required shared
 
 ## Author
 
-[Your Name]
+Mohamed Soliman 
 
-## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
